@@ -21,29 +21,49 @@ def control_camera(stdscr):
     key_dict = {
         curses.KEY_UP: "Up",
         curses.KEY_DOWN: "Down",
-        curses.KEY_LEFT: "Right",
-        curses.KEY_RIGHT: "Left"
+        curses.KEY_LEFT: "Left",
+        curses.KEY_RIGHT: "Right"
     }
 
     stdscr.nodelay(True)
-    stdscr.timeout(100)
+    stdscr.timeout(1)   
 
-    stdscr.addstr(1, 0, "Use as setas para controlar a câmera. q para sair.\n")
+    stdscr.addstr(1, 0, "Use as setas do teclado para controlar. q para sair\n")
     stdscr.refresh()
 
+    last_direction = None
     while True:
         key = stdscr.getch()
         if key in key_dict:
             direction = key_dict[key]
-            stdscr.addstr(2, 0, f"{direction} pressionada  ")
+            stdscr.addstr(2, 0, f"{direction}")
             stdscr.refresh()
 
-            cam.ptz(f"Direction{direction}", step=5, preset=0)
-            sleep(0.3)
-            cam.ptz(f"Direction{direction}", step=5, preset=-1)
-
+            step = 1
+            if direction == "Left":
+                direction = "Right"
+                step = 5
+            elif direction == "Right":
+                direction = "Left"
+                step = 5
+        
+            cam.ptz(f"Direction{direction}", step=step, preset=0)
+            last_direction = direction
+        
         elif key == ord('q'):
             break
+
+        else:
+            if last_direction is not None:
+                cam.ptz(f"Direction{last_direction}", step=5, preset=-1)
+            last_direction = None
+
+        stdscr.move(2, 0)
+        stdscr.clrtoeol()
+        stdscr.refresh()
+
+    # Just in case the program stops and the camera is still moving
+    cam.ptz(f"DirectionDown", step=5, preset=-1)
 
 if __name__ == "__main__":
     curses.wrapper(control_camera)
